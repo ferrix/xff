@@ -9,7 +9,7 @@ server. The header looks something like this::
 
 This translates to::
 
-    X-Forwarded-For: client, proxy1[, proxy 2[...]]
+    X-Forwarded-For: client, proxy1[, proxy2[...]]
 
 However it is just a header. Most default configurations simply append
 to the header. It is trivial for a malicious client to deliver a header
@@ -59,10 +59,13 @@ Configuration
 =============
 
 Add the following to your Django ``settings.py`` module to enable this
-middleware for two reverse proxies expected::
+middleware for two reverse proxies expected. The middlewares are
+processed order of appearance. This middleware should go somewhere
+near the top to avoid giving a potentially malicious user chances to
+validate passwords with malformed requests::
 
     MIDDLEWARE_CLASSES = [
-       <other middlewares here>
+       <a few middlewares here>
        'xff.middleware.XForwardedForMiddleware',
        <more middlewares here>
     ]
@@ -135,3 +138,61 @@ through the main entrance::
 
 This will assume that anything below ``XFF_TRUSTED_PROXY_DEPTH`` is
 trusted. The method is naive, but effective.
+
+Logging
+=======
+
+Dropped requests will be logged. This means that there will be plenty of
+logs when the library is misconfigured or malicious things are taking
+place. It is recommended to keep the logs for tracing in case of a real
+attack. However they can be filtered from development by setting::
+
+    LOGGING = {
+        'loggers': {
+             'xff.middleware': {
+                  'handlers': ['null'],
+                  'propagate': False,
+             },
+         },
+    }
+
+Setting up
+==========
+
+It is recommended to enable the middleware with the assumed number of
+proxies and investigating the logs. If the header is not present or the
+middleware is not configured, there will be no log entries. If the logs
+state that the depth is incorrect, it should be reduced. If all
+requests are considered as spoofing, the depth should probably be
+increased::
+
+    MIDDLEWARE_CLASSES = [
+        'xff.missleware.XForwardedForMiddleware',
+        'django.contrib.sessions.middleware.SessionMiddleware',
+        'django.middleware.common.CommonMiddleware',
+        'django.contrib.auth.middleware.AuthenticationMiddleware',
+    ]
+
+    XFF_TRUSTED_PROXY_DEPTH = 2
+
+When logs appear correct, control can be increased in increments::
+
+    XFF_NO_SPOOFING = True
+
+Then::
+
+    XFF_STRICT = True
+
+Defining exceptions is feasible with other flags set. The following
+could be used behind an AWS Elastic Loadbalancer to prevent entry
+without the proper header set but allow healthcheck to return
+correctly. The stealth would also mask the same URI with a 404
+error::
+
+    XFF_TRUSTED_PROXY_DEPTH = 1
+    XFF_EXEMPT_URLS = [r'^health/]
+    XFF_REQUIRE_HEADER = True
+    XFF_EXEMPT_STEALTH = True
+
+In case there is a chain of reverse proxies, the healthcheck URI is
+available for all layers except the last one.
