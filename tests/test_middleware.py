@@ -84,7 +84,7 @@ class TestStrict(TestCase):
                        XFF_HEADER_REQUIRED=False)
     def test_too_many_proxies_exempt(self):
         response = self.client.get(
-            '/health/', HTTP_REMOTE_ADDR='',
+            '/health/',
             HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2, 127.0.0.3')
         self.assertEquals(200, response.status_code)
         assert not self.logger.method_calls
