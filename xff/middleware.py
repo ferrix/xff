@@ -57,7 +57,7 @@ class XForwardedForMiddleware(object):
             header = request.META['HTTP_X_FORWARDED_FOR']
             levels = [x.strip() for x in header.split(',')]
 
-            if levels >= depth and exempt and stealth:
+            if len(levels) >= depth and exempt and stealth:
                 return HttpResponseNotFound()
 
             if loose or exempt:
@@ -70,23 +70,24 @@ class XForwardedForMiddleware(object):
                     'Expected {} and got {} remote addresses in ' +
                     'X-Forwarded-For header.')
                     .format(
-                        depth, levels))
+                        depth, len(levels)))
                 return HttpResponseBadRequest()
 
-            if levels < depth or depth == 0:
+            if len(levels) < depth or depth == 0:
                 logger.warning(
                     'Not running behind as many reverse proxies as expected.\n' +
                     'The right value for XFF_TRUSTED_PROXY_DEPTH for this ' +
-                    'request is {} and {} is configured.'.format(levels, depth)
+                    'request is {} and {} is configured.'.format(
+                        len(levels), depth)
                 )
                 if always_proxy:
                     return HttpResponseBadRequest()
 
-                depth = levels
-            elif levels > depth:
+                depth = len(levels)
+            elif len(levels) > depth:
                 logger.info(
                     ('X-Forwarded-For spoof attempt with {} addresses when {}' +
-                     'expected. Full header: {}').format(levels, depth, header))
+                     'expected. Full header: {}').format(len(levels), depth, header))
                 if no_spoofing:
                     return HttpResponseBadRequest()
 
