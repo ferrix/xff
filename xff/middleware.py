@@ -86,8 +86,9 @@ class XForwardedForMiddleware(object):
                 depth = len(levels)
             elif len(levels) > depth:
                 logger.info(
-                    ('X-Forwarded-For spoof attempt with {} addresses when {}' +
-                     'expected. Full header: {}').format(len(levels), depth, header))
+                    ('X-Forwarded-For spoof attempt with {} addresses when ' +
+                     '{} expected. Full header: {}').format(
+                         len(levels), depth, header))
                 if no_spoofing:
                     return HttpResponseBadRequest()
 
