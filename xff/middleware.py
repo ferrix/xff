@@ -75,8 +75,8 @@ class XForwardedForMiddleware(object):
 
             if len(levels) < depth or depth == 0:
                 logger.warning(
-                    'Not running behind as many reverse proxies as expected.\n' +
-                    'The right value for XFF_TRUSTED_PROXY_DEPTH for this ' +
+                    'Not running behind as many reverse proxies as expected.' +
+                    "\nThe right value for XFF_TRUSTED_PROXY_DEPTH for this " +
                     'request is {} and {} is configured.'.format(
                         len(levels), depth)
                 )

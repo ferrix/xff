@@ -48,7 +48,8 @@ class TestStrict(TestCase):
     @override_settings(XFF_STRICT=True, XFF_TRUSTED_PROXY_DEPTH=2,
                        XFF_HEADER_REQUIRED=False)
     def test_too_few_proxies_exempt(self):
-        response = self.client.get('/health/', HTTP_X_FORWARDED_FOR='127.0.0.1')
+        response = self.client.get('/health/',
+                                   HTTP_X_FORWARDED_FOR='127.0.0.1')
         self.assertEquals(200, response.status_code)
         assert not self.logger.method_calls
 
@@ -115,7 +116,8 @@ class TestNoSpoofing(TestCase):
     @override_settings(XFF_NO_SPOOFING=True, XFF_TRUSTED_PROXY_DEPTH=2,
                        XFF_HEADER_REQUIRED=False)
     def test_too_few_proxies_exempt(self):
-        response = self.client.get('/health/', HTTP_X_FORWARDED_FOR='127.0.0.1')
+        response = self.client.get('/health/',
+                                   HTTP_X_FORWARDED_FOR='127.0.0.1')
         self.assertEquals(200, response.status_code)
         assert not self.logger.method_calls
 
@@ -192,7 +194,8 @@ class TestAlwaysProxy(TestCase):
     @override_settings(XFF_ALWAYS_PROXY=True, XFF_TRUSTED_PROXY_DEPTH=2,
                        XFF_HEADER_REQUIRED=False)
     def test_too_few_proxies_exempt(self):
-        response = self.client.get('/health/', HTTP_X_FORWARDED_FOR='127.0.0.1')
+        response = self.client.get('/health/',
+                                   HTTP_X_FORWARDED_FOR='127.0.0.1')
         self.assertEquals(200, response.status_code)
         assert not self.logger.method_calls
 
