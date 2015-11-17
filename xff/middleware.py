@@ -61,7 +61,7 @@ class XForwardedForMiddleware(object):
                 return HttpResponseNotFound()
 
             if loose or exempt:
-                request['HTTP_REMOTE_ADDR'] = levels[0]
+                request.META['REMOTE_ADDR'] = levels[0]
                 return None
 
             if len(levels) != depth and strict:
