@@ -89,6 +89,32 @@ class TestStrict(TestCase):
         self.assertEquals(200, response.status_code)
         assert not self.logger.method_calls
 
+    @override_settings(XFF_LOOSE_UNSAFE=True, XFF_STRICT=True,
+                       XFF_TRUSTED_PROXY_DEPTH=2, XFF_HEADER_REQUIRED=True,
+                       XFF_NO_SPOOFING=True, XFF_ALWAYS_PROXY=True)
+    def test_loose_no_header(self):
+        response = self.client.get('/')
+        self.assertEquals(200, response.status_code)
+        assert not self.logger.method_calls
+
+    @override_settings(XFF_LOOSE_UNSAFE=True, XFF_STRICT=True,
+                       XFF_TRUSTED_PROXY_DEPTH=2, XFF_HEADER_REQUIRED=True,
+                       XFF_NO_SPOOFING=True, XFF_ALWAYS_PROXY=True)
+    def test_loose(self):
+        response = self.client.get(
+            '/',
+            HTTP_X_FORWARDED_FOR='127.0.0.1')
+        self.assertEquals(200, response.status_code, 'Too few addresses')
+        response = self.client.get(
+            '/',
+            HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2, 127.0.0.3')
+        self.assertEquals(200, response.status_code, 'Correct addresses')
+        response = self.client.get(
+            '/',
+            HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2, 127.0.0.3')
+        self.assertEquals(200, response.status_code, 'Too many addresses')
+        assert not self.logger.method_calls
+
 
 class TestNoSpoofing(TestCase):
     def setUp(self):

@@ -98,7 +98,7 @@ class XForwardedForMiddleware(object):
                 cleaned = ','.join(levels[-1 * depth:])
                 request.META['HTTP_X_FORWARDED_FOR'] = cleaned
 
-        elif header_required and not exempt:
+        elif header_required and not (exempt or loose):
             logger.error(
                 'No X-Forwarded-For header set, not behind a reverse proxy.')
             return HttpResponseBadRequest()
