@@ -41,7 +41,7 @@ class XForwardedForMiddleware(object):
     is not set. By default it takes the same value as XFF_ALWAYS_PROXY.
     '''
     def process_request(self, request):
-        path = request.path_info
+        path = request.path_info.lstrip('/')
         depth = getattr(settings, 'XFF_TRUSTED_PROXY_DEPTH', 0)
         exempt = any(m.match(path) for m in XFF_EXEMPT_URLS)
         stealth = getattr(settings, 'XFF_EXEMPT_STEALTH', False)

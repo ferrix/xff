@@ -37,5 +37,5 @@ def pytest_configure():
         DEBUG=True,
         TEMPLATE_DEBUG=True,
         LOGGING={},
-        XFF_EXEMPT_URLS=[r'^/health/$']
+        XFF_EXEMPT_URLS=[r'^health/$']
     )
