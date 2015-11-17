@@ -1,8 +1,12 @@
 build/*
 dist/*
+htmlcov/*
 __pycache__/*
 .ropeproject/*
 *.pyc
 *.swp
 *.egg-info
 db.sqlite3
+.cache
+.coverage
+.tox

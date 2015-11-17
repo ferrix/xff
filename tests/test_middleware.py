@@ -62,6 +62,15 @@ class TestStrict(TestCase):
         assert not self.logger.method_calls
 
     @override_settings(XFF_STRICT=True, XFF_TRUSTED_PROXY_DEPTH=2,
+                       XFF_HEADER_REQUIRED=False, XFF_EXEMPT_STEALTH=True)
+    def test_correct_proxies_exempt_stealth(self):
+        response = self.client.get(
+            '/health/',
+            HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2')
+        self.assertEquals(404, response.status_code)
+        assert not self.logger.method_calls
+
+    @override_settings(XFF_STRICT=True, XFF_TRUSTED_PROXY_DEPTH=2,
                        XFF_HEADER_REQUIRED=False)
     def test_too_many_proxies(self):
         response = self.client.get(
