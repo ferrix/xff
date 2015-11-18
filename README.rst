@@ -167,7 +167,7 @@ requests are considered as spoofing, the depth should probably be
 increased::
 
     MIDDLEWARE_CLASSES = [
-        'xff.missleware.XForwardedForMiddleware',
+        'xff.middleware.XForwardedForMiddleware',
         'django.contrib.sessions.middleware.SessionMiddleware',
         'django.middleware.common.CommonMiddleware',
         'django.contrib.auth.middleware.AuthenticationMiddleware',
