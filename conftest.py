@@ -27,6 +27,12 @@ def pytest_configure():
             'django.contrib.auth.middleware.AuthenticationMiddleware',
             'django.contrib.messages.middleware.MessageMiddleware',
         ),
+        MIDDLEWARE=(
+            'xff.middleware.XForwardedForMiddleware',
+            'django.contrib.sessions.middleware.SessionMiddleware',
+            'django.contrib.auth.middleware.AuthenticationMiddleware',
+            'django.contrib.messages.middleware.MessageMiddleware',
+        ),
         DATABASES={
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',

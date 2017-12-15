@@ -10,8 +10,6 @@ env:
   - TOX_ENV=py27-dj17
   - TOX_ENV=py27-dj18
   - TOX_ENV=py27-dj19
-  - TOX_ENV=py27-dj20
-  - TOX_ENV=py27-djmaster
   - TOX_ENV=py34-dj15
   - TOX_ENV=py34-dj16
   - TOX_ENV=py34-dj17
@@ -23,7 +21,6 @@ env:
 matrix:
   fast_finish: true
   allow_failures:
-    - env: TOX_ENV=py27-djmaster
     - env: TOX_ENV=py34-djmaster
 
 install:

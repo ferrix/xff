@@ -40,6 +40,15 @@ class XForwardedForMiddleware(object):
     XFF_HEADER_REQUIRED = True will return a bad request when the header
     is not set. By default it takes the same value as XFF_ALWAYS_PROXY.
     '''
+    def __init__(self, get_response=None):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.process_request(request)
+        if not response:
+            response = self.get_response(request)
+        return response
+
     def process_request(self, request):
         path = request.path_info.lstrip('/')
         depth = getattr(settings, 'XFF_TRUSTED_PROXY_DEPTH', 0)
