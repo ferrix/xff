@@ -9,26 +9,22 @@ env:
   - TOX_ENV=py27-dj16
   - TOX_ENV=py27-dj17
   - TOX_ENV=py27-dj18
+  - TOX_ENV=py27-dj19
+  - TOX_ENV=py27-dj20
   - TOX_ENV=py27-djmaster
   - TOX_ENV=py34-dj15
   - TOX_ENV=py34-dj16
   - TOX_ENV=py34-dj17
   - TOX_ENV=py34-dj18
+  - TOX_ENV=py34-dj19
+  - TOX_ENV=py34-dj20
   - TOX_ENV=py34-djmaster
-  - TOX_ENV=pypy-dj17
-  - TOX_ENV=pypy-dj18
-  - TOX_ENV=pypy-djmaster
-  - TOX_ENV=pypy3-dj17
-  - TOX_ENV=pypy3-dj18
-  - TOX_ENV=pypy3-djmaster
 
 matrix:
   fast_finish: true
   allow_failures:
     - env: TOX_ENV=py27-djmaster
     - env: TOX_ENV=py34-djmaster
-    - env: TOX_ENV=pypy-djmaster
-    - env: TOX_ENV=pypy3-djmaster
 
 install:
   - pip install tox coveralls
