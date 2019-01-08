@@ -26,7 +26,7 @@ setup(name='django-xff',
       author_email='ferrix@codetry.fi',
       install_requires=get_requirements('requirements.txt'),
       packages=['xff'],
-      url='https://github.com/codetry/xff/',
+      url='https://github.com/ferrix/xff/',
       license='MIT License',
       classifiers=[
           'Environment :: Web Environment',
