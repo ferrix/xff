@@ -4,7 +4,18 @@ from django.test.utils import override_settings
 from xff.middleware import XForwardedForMiddleware
 
 
-class TestStrict(TestCase):
+class WebTestCase(TestCase):
+    ''' Helpers for web request testing '''
+    def assert_http_ok(self, response, message=None):
+        ''' Assert response code 200 '''
+        self.assertEqual(200, response.status_code, message)
+
+    def assert_http_bad_request(self, response, message=None):
+        ''' Assert response code 400 '''
+        self.assertEqual(400, response.status_code, message)
+
+
+class TestStrict(WebTestCase):
     def setUp(self):
         self.middleware = XForwardedForMiddleware()
         self.client = Client()
@@ -17,40 +28,40 @@ class TestStrict(TestCase):
     @override_settings(XFF_STRICT=True)
     def test_no_header(self):
         response = self.client.get('/')
-        self.assertEquals(400, response.status_code)
-        self.assertEquals(1, self.logger.error.call_count)
+        self.assert_http_bad_request(response)
+        self.assertEqual(1, self.logger.error.call_count)
 
     @override_settings(XFF_STRICT=True)
     def test_no_header_exempt(self):
         response = self.client.get('/health/')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
 
     @override_settings(XFF_STRICT=True, XFF_HEADER_REQUIRED=False)
     def test_no_header_not_required(self):
         response = self.client.get('/')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
 
     @override_settings(XFF_ALWAYS_PROXY=True, XFF_HEADER_REQUIRED=False)
     def test_no_header_not_required_exempt(self):
         response = self.client.get('/health/')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
 
     @override_settings(XFF_STRICT=True, XFF_TRUSTED_PROXY_DEPTH=2,
                        XFF_HEADER_REQUIRED=False)
     def test_too_few_proxies(self):
         response = self.client.get('/', HTTP_X_FORWARDED_FOR='127.0.0.1')
-        self.assertEquals(400, response.status_code)
-        self.assertEquals(1, self.logger.warning.call_count)
+        self.assert_http_bad_request(response)
+        self.assertEqual(1, self.logger.warning.call_count)
 
     @override_settings(XFF_STRICT=True, XFF_TRUSTED_PROXY_DEPTH=2,
                        XFF_HEADER_REQUIRED=False)
     def test_too_few_proxies_exempt(self):
         response = self.client.get('/health/',
                                    HTTP_X_FORWARDED_FOR='127.0.0.1')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
 
     @override_settings(XFF_STRICT=True, XFF_TRUSTED_PROXY_DEPTH=2,
@@ -59,7 +70,7 @@ class TestStrict(TestCase):
         response = self.client.get(
             '/',
             HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
 
     @override_settings(XFF_STRICT=True, XFF_TRUSTED_PROXY_DEPTH=2,
@@ -68,7 +79,7 @@ class TestStrict(TestCase):
         response = self.client.get(
             '/health/',
             HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2')
-        self.assertEquals(404, response.status_code)
+        self.assertEqual(404, response.status_code)
         assert not self.logger.method_calls
 
     @override_settings(XFF_STRICT=True, XFF_TRUSTED_PROXY_DEPTH=2,
@@ -77,8 +88,8 @@ class TestStrict(TestCase):
         response = self.client.get(
             '/',
             HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2, 127.0.0.3')
-        self.assertEquals(400, response.status_code)
-        self.assertEquals(1, self.logger.warning.call_count)
+        self.assert_http_bad_request(response)
+        self.assertEqual(1, self.logger.warning.call_count)
 
     @override_settings(XFF_STRICT=True, XFF_TRUSTED_PROXY_DEPTH=2,
                        XFF_HEADER_REQUIRED=False)
@@ -86,7 +97,7 @@ class TestStrict(TestCase):
         response = self.client.get(
             '/health/',
             HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2, 127.0.0.3')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
 
     @override_settings(XFF_LOOSE_UNSAFE=True, XFF_STRICT=True,
@@ -94,7 +105,7 @@ class TestStrict(TestCase):
                        XFF_NO_SPOOFING=True, XFF_ALWAYS_PROXY=True)
     def test_loose_no_header(self):
         response = self.client.get('/')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
 
     @override_settings(XFF_LOOSE_UNSAFE=True, XFF_STRICT=True,
@@ -104,19 +115,19 @@ class TestStrict(TestCase):
         response = self.client.get(
             '/',
             HTTP_X_FORWARDED_FOR='127.0.0.1')
-        self.assertEquals(200, response.status_code, 'Too few addresses')
+        self.assert_http_ok(response, 'Too few addresses')
         response = self.client.get(
             '/',
             HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2, 127.0.0.3')
-        self.assertEquals(200, response.status_code, 'Correct addresses')
+        self.assert_http_ok(response, 'Correct addresses')
         response = self.client.get(
             '/',
             HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2, 127.0.0.3')
-        self.assertEquals(200, response.status_code, 'Too many addresses')
+        self.assert_http_ok(response, 'Too many addresses')
         assert not self.logger.method_calls
 
 
-class TestNoSpoofing(TestCase):
+class TestNoSpoofing(WebTestCase):
     def setUp(self):
         self.middleware = XForwardedForMiddleware()
         self.client = Client()
@@ -129,22 +140,22 @@ class TestNoSpoofing(TestCase):
     @override_settings(XFF_NO_SPOOFING=True)
     def test_no_header(self):
         response = self.client.get('/')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
 
     @override_settings(XFF_NO_SPOOFING=True, XFF_TRUSTED_PROXY_DEPTH=2)
     def test_too_few_proxies(self):
         response = self.client.get('/', HTTP_X_FORWARDED_FOR='127.0.0.1')
-        self.assertEquals(200, response.status_code)
-        self.assertEquals(1, self.logger.warning.call_count)
-        self.assertEquals(1, len(self.logger.method_calls))
+        self.assert_http_ok(response)
+        self.assertEqual(1, self.logger.warning.call_count)
+        self.assertEqual(1, len(self.logger.method_calls))
 
     @override_settings(XFF_NO_SPOOFING=True, XFF_TRUSTED_PROXY_DEPTH=2,
                        XFF_HEADER_REQUIRED=False)
     def test_too_few_proxies_exempt(self):
         response = self.client.get('/health/',
                                    HTTP_X_FORWARDED_FOR='127.0.0.1')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
 
     @override_settings(XFF_NO_SPOOFING=True, XFF_TRUSTED_PROXY_DEPTH=2,
@@ -153,7 +164,7 @@ class TestNoSpoofing(TestCase):
         response = self.client.get(
             '/',
             HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
 
     @override_settings(XFF_NO_SPOOFING=True, XFF_TRUSTED_PROXY_DEPTH=2,
@@ -162,9 +173,9 @@ class TestNoSpoofing(TestCase):
         response = self.client.get(
             '/',
             HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2, 127.0.0.3')
-        self.assertEquals(400, response.status_code)
-        self.assertEquals(1, self.logger.info.call_count)
-        self.assertEquals(1, len(self.logger.method_calls))
+        self.assert_http_bad_request(response)
+        self.assertEqual(1, self.logger.info.call_count)
+        self.assertEqual(1, len(self.logger.method_calls))
 
     @override_settings(XFF_NO_SPOOFING=True, XFF_TRUSTED_PROXY_DEPTH=2,
                        XFF_HEADER_REQUIRED=False)
@@ -172,11 +183,11 @@ class TestNoSpoofing(TestCase):
         response = self.client.get(
             '/health/', HTTP_REMOTE_ADDR='',
             HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2, 127.0.0.3')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
 
 
-class TestAlwaysProxy(TestCase):
+class TestAlwaysProxy(WebTestCase):
     def setUp(self):
         self.middleware = XForwardedForMiddleware()
         self.client = Client()
@@ -189,40 +200,40 @@ class TestAlwaysProxy(TestCase):
     @override_settings(XFF_ALWAYS_PROXY=True)
     def test_no_header(self):
         response = self.client.get('/')
-        self.assertEquals(400, response.status_code)
-        self.assertEquals(1, self.logger.error.call_count)
+        self.assert_http_bad_request(response)
+        self.assertEqual(1, self.logger.error.call_count)
 
     @override_settings(XFF_ALWAYS_PROXY=True)
     def test_no_header_exempt(self):
         response = self.client.get('/health/')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
 
     @override_settings(XFF_ALWAYS_PROXY=True, XFF_HEADER_REQUIRED=False)
     def test_no_header_not_required(self):
         response = self.client.get('/')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
 
     @override_settings(XFF_ALWAYS_PROXY=True, XFF_HEADER_REQUIRED=False)
     def test_no_header_not_required_exempt(self):
         response = self.client.get('/health/')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
 
     @override_settings(XFF_ALWAYS_PROXY=True, XFF_TRUSTED_PROXY_DEPTH=2,
                        XFF_HEADER_REQUIRED=False)
     def test_too_few_proxies(self):
         response = self.client.get('/', HTTP_X_FORWARDED_FOR='127.0.0.1')
-        self.assertEquals(400, response.status_code)
-        self.assertEquals(1, self.logger.warning.call_count)
+        self.assert_http_bad_request(response)
+        self.assertEqual(1, self.logger.warning.call_count)
 
     @override_settings(XFF_ALWAYS_PROXY=True, XFF_TRUSTED_PROXY_DEPTH=2,
                        XFF_HEADER_REQUIRED=False)
     def test_too_few_proxies_exempt(self):
         response = self.client.get('/health/',
                                    HTTP_X_FORWARDED_FOR='127.0.0.1')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
 
     @override_settings(XFF_ALWAYS_PROXY=True, XFF_TRUSTED_PROXY_DEPTH=2,
@@ -231,7 +242,7 @@ class TestAlwaysProxy(TestCase):
         response = self.client.get(
             '/',
             HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
 
     @override_settings(XFF_ALWAYS_PROXY=True, XFF_TRUSTED_PROXY_DEPTH=2,
@@ -240,8 +251,8 @@ class TestAlwaysProxy(TestCase):
         response = self.client.get(
             '/',
             HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2, 127.0.0.3')
-        self.assertEquals(200, response.status_code)
-        self.assertEquals(1, self.logger.info.call_count)
+        self.assert_http_ok(response)
+        self.assertEqual(1, self.logger.info.call_count)
 
     @override_settings(XFF_ALWAYS_PROXY=True, XFF_TRUSTED_PROXY_DEPTH=2,
                        XFF_HEADER_REQUIRED=False)
@@ -249,5 +260,5 @@ class TestAlwaysProxy(TestCase):
         response = self.client.get(
             '/health/', HTTP_REMOTE_ADDR='',
             HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2, 127.0.0.3')
-        self.assertEquals(200, response.status_code)
+        self.assert_http_ok(response)
         assert not self.logger.method_calls
