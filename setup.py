@@ -3,16 +3,17 @@
 import os
 import versioneer
 from setuptools import setup
-from pip.req import parse_requirements
-from pip.download import PipSession
 
+
+def parse_requirements(filename):
+    lineiter = (line.strip() for line in open(filename))
+    return [line for line in lineiter if line and not line.startswith("#")]
 
 def get_requirements(filename):
     if not os.path.exists(filename):
         return []
 
-    install_reqs = parse_requirements(filename, session=PipSession())
-    return [str(ir.req) for ir in install_reqs]
+    return parse_requirements(filename)
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as readme:
     README = readme.read()
