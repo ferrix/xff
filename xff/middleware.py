@@ -45,6 +45,16 @@ class XForwardedForMiddleware:
     def __init__(self, get_response=None):
         self.get_response = get_response
 
+        self.depth = getattr(settings, 'XFF_TRUSTED_PROXY_DEPTH', 0)
+        self.stealth = getattr(settings, 'XFF_EXEMPT_STEALTH', False)
+        self.loose = getattr(settings, 'XFF_LOOSE_UNSAFE', False)
+        self.strict = getattr(settings, 'XFF_STRICT', False)
+        self.always_proxy = getattr(settings, 'XFF_ALWAYS_PROXY', False)
+        self.no_spoofing = getattr(settings, 'XFF_NO_SPOOFING', False)
+        self.header_required = getattr(settings, 'XFF_HEADER_REQUIRED',
+                                       (self.always_proxy or self.strict))
+        self.clean = getattr(settings, 'XFF_CLEAN', True)
+
     def __call__(self, request):
         response = self.process_request(request)
         if not response:
@@ -56,29 +66,21 @@ class XForwardedForMiddleware:
         The beef.
         '''
         path = request.path_info.lstrip('/')
-        depth = getattr(settings, 'XFF_TRUSTED_PROXY_DEPTH', 0)
+        depth = self.depth
         exempt = any(m.match(path) for m in XFF_EXEMPT_URLS)
-        stealth = getattr(settings, 'XFF_EXEMPT_STEALTH', False)
-        loose = getattr(settings, 'XFF_LOOSE_UNSAFE', False)
-        strict = getattr(settings, 'XFF_STRICT', False)
-        always_proxy = getattr(settings, 'XFF_ALWAYS_PROXY', False)
-        no_spoofing = getattr(settings, 'XFF_NO_SPOOFING', False)
-        header_required = getattr(settings, 'XFF_HEADER_REQUIRED',
-                                  (always_proxy or strict))
-        clean = getattr(settings, 'XFF_CLEAN', True)
 
         if 'HTTP_X_FORWARDED_FOR' in request.META:
             header = request.META['HTTP_X_FORWARDED_FOR']
             levels = [x.strip() for x in header.split(',')]
 
-            if len(levels) >= depth and exempt and stealth:
+            if len(levels) >= depth and exempt and self.stealth:
                 return HttpResponseNotFound()
 
-            if loose or exempt:
+            if self.loose or exempt:
                 request.META['REMOTE_ADDR'] = levels[0]
                 return None
 
-            if len(levels) != depth and strict:
+            if len(levels) != depth and self.strict:
                 logger.warning((
                     "Incorrect proxy depth in incoming request.\n" +
                     'Expected {} and got {} remote addresses in ' +
@@ -94,7 +96,7 @@ class XForwardedForMiddleware:
                     'request is {} and {} is configured.'.format(
                         len(levels), depth)
                 )
-                if always_proxy:
+                if self.always_proxy:
                     return HttpResponseBadRequest()
 
                 depth = len(levels)
@@ -103,16 +105,16 @@ class XForwardedForMiddleware:
                     ('X-Forwarded-For spoof attempt with {} addresses when ' +
                      '{} expected. Full header: {}').format(
                          len(levels), depth, header))
-                if no_spoofing:
+                if self.no_spoofing:
                     return HttpResponseBadRequest()
 
             request.META['REMOTE_ADDR'] = levels[-1 * depth]
 
-            if clean:
+            if self.clean:
                 cleaned = ','.join(levels[-1 * depth:])
                 request.META['HTTP_X_FORWARDED_FOR'] = cleaned
 
-        elif header_required and not (exempt or loose):
+        elif self.header_required and not (exempt or self.loose):
             logger.error(
                 'No X-Forwarded-For header set, not behind a reverse proxy.')
             return HttpResponseBadRequest()
