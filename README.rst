@@ -2,9 +2,9 @@ Django X-Forwarded-For Properly
 -------------------------------
 
 .. image:: https://travis-ci.org/ferrix/xff.svg?branch=master
-:target: https://travis-ci.org/ferrix/xff
+    :target: https://travis-ci.org/ferrix/xff
 .. image:: https://coveralls.io/repos/github/ferrix/xff/badge.svg
-:target: https://coveralls.io/github/ferrix/xff
+    :target: https://coveralls.io/github/ferrix/xff
 
 
 The X-Forwarded-For header is used by many reverse proxies to pass the
