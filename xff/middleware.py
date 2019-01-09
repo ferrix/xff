@@ -1,8 +1,10 @@
+''' XFF Middleware '''
 import logging
 from re import compile
 
 from django.conf import settings
 from django.http import HttpResponseBadRequest, HttpResponseNotFound
+
 
 XFF_EXEMPT_URLS = []
 if hasattr(settings, 'XFF_EXEMPT_URLS'):
@@ -11,7 +13,7 @@ if hasattr(settings, 'XFF_EXEMPT_URLS'):
 logger = logging.getLogger(__name__)
 
 
-class XForwardedForMiddleware(object):
+class XForwardedForMiddleware:
     '''
     Fix HTTP_REMOTE_ADDR header to show client IP in a proxied environment.
 
@@ -50,6 +52,9 @@ class XForwardedForMiddleware(object):
         return response
 
     def process_request(self, request):
+        '''
+        The beef.
+        '''
         path = request.path_info.lstrip('/')
         depth = getattr(settings, 'XFF_TRUSTED_PROXY_DEPTH', 0)
         exempt = any(m.match(path) for m in XFF_EXEMPT_URLS)
