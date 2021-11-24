@@ -27,7 +27,7 @@ What ``django-xff`` does
 ========================
 
 This library provides a decent and configurable middleware to rewrite
-the ``request.META['HTTP_REMOTE_ADDR']`` to the correct client IP.
+the ``request.META['REMOTE_ADDR']`` to the correct client IP.
 
 This is done by setting a depth of reverse proxies to be trusted alone.
 The ``X-Forwarded-For`` header will additionally be sanitized from any
