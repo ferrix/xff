@@ -131,11 +131,6 @@ class TestClean(WebTestCase):
     def setUp(self):
         self.middleware = XForwardedForMiddleware()
         self.client = Client()
-        self.patcher = patch('xff.middleware.logger', autospec=True)
-        self.logger = self.patcher.start()
-
-    def tearDown(self):
-        self.patcher.stop()
 
     @override_settings(XFF_TRUSTED_PROXY_DEPTH=2)
     def test_too_many_proxies_rewrites_xff(self):
@@ -162,11 +157,6 @@ class TestRewriteRemote(WebTestCase):
     def setUp(self):
         self.middleware = XForwardedForMiddleware()
         self.client = Client()
-        self.patcher = patch('xff.middleware.logger', autospec=True)
-        self.logger = self.patcher.start()
-
-    def tearDown(self):
-        self.patcher.stop()
 
     @override_settings(XFF_TRUSTED_PROXY_DEPTH=2)
     def test_rewrites_remote_addr(self):
