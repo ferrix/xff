@@ -111,6 +111,11 @@ the right place, use::
 
     XFF_LOOSE_UNSAFE = True
 
+By default, this middleware rewrites ``REMOTE_ADDR``. To leave it
+untouched, use::
+
+    XFF_REWRITE_REMOTE_ADDR = False
+
 If you want to keep the ``X-Forwarded-For`` header untouched even if
 there are extra entries, use::
 

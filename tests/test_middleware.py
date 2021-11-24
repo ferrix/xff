@@ -127,6 +127,40 @@ class TestStrict(WebTestCase):
         assert not self.logger.method_calls
 
 
+class TestRewriteRemote(WebTestCase):
+    def setUp(self):
+        self.middleware = XForwardedForMiddleware()
+        self.client = Client()
+        self.patcher = patch('xff.middleware.logger', autospec=True)
+        self.logger = self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
+
+    @override_settings(XFF_TRUSTED_PROXY_DEPTH=2)
+    def test_rewrites_remote_addr(self):
+        response = self.client.get(
+            '/',
+            HTTP_X_FORWARDED_FOR='127.0.0.3, 127.0.0.2',
+            REMOTE_ADDR='127.0.0.9',
+        )
+        self.assert_http_ok(response)
+        request = response.wsgi_request
+        self.assertEqual('127.0.0.3',
+                         request.META['REMOTE_ADDR'])
+
+    @override_settings(XFF_TRUSTED_PROXY_DEPTH=2, XFF_REWRITE_REMOTE_ADDR=False)
+    def test_can_be_disabled(self):
+        response = self.client.get(
+            '/',
+            HTTP_X_FORWARDED_FOR='127.0.0.3, 127.0.0.2',
+            REMOTE_ADDR='127.0.0.9',
+        )
+        self.assert_http_ok(response)
+        request = response.wsgi_request
+        self.assertEqual('127.0.0.9', request.META['REMOTE_ADDR'])
+
+
 class TestNoSpoofing(WebTestCase):
     def setUp(self):
         self.middleware = XForwardedForMiddleware()
