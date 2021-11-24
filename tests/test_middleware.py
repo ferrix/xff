@@ -127,6 +127,37 @@ class TestStrict(WebTestCase):
         assert not self.logger.method_calls
 
 
+class TestClean(WebTestCase):
+    def setUp(self):
+        self.middleware = XForwardedForMiddleware()
+        self.client = Client()
+        self.patcher = patch('xff.middleware.logger', autospec=True)
+        self.logger = self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
+
+    @override_settings(XFF_TRUSTED_PROXY_DEPTH=2)
+    def test_too_many_proxies_rewrites_xff(self):
+        response = self.client.get(
+            '/',
+            HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2, 127.0.0.3')
+        self.assert_http_ok(response)
+        request = response.wsgi_request
+        self.assertEqual('127.0.0.2,127.0.0.3',
+                         request.META['HTTP_X_FORWARDED_FOR'])
+
+    @override_settings(XFF_TRUSTED_PROXY_DEPTH=2, XFF_CLEAN=False)
+    def test_can_be_disabled(self):
+        response = self.client.get(
+            '/',
+            HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2, 127.0.0.3')
+        self.assert_http_ok(response)
+        request = response.wsgi_request
+        self.assertEqual('127.0.0.1, 127.0.0.2, 127.0.0.3',
+                         request.META['HTTP_X_FORWARDED_FOR'])
+
+
 class TestRewriteRemote(WebTestCase):
     def setUp(self):
         self.middleware = XForwardedForMiddleware()
@@ -159,6 +190,30 @@ class TestRewriteRemote(WebTestCase):
         self.assert_http_ok(response)
         request = response.wsgi_request
         self.assertEqual('127.0.0.9', request.META['REMOTE_ADDR'])
+
+
+class TestProxyDepth(WebTestCase):
+    def setUp(self):
+        self.middleware = XForwardedForMiddleware()
+        self.client = Client()
+        self.patcher = patch('xff.middleware.logger', autospec=True)
+        self.logger = self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
+
+    @override_settings(XFF_TRUSTED_PROXY_DEPTH=2)
+    def test_too_many_proxies_logs_spoof_attempt(self):
+        response = self.client.get(
+            '/',
+            HTTP_X_FORWARDED_FOR='127.0.0.1, 127.0.0.2, 127.0.0.3')
+        self.assert_http_ok(response)
+        expected_message = (
+            'X-Forwarded-For spoof attempt with 3 addresses when 2 expected. '
+            'Full header: 127.0.0.1, 127.0.0.2, 127.0.0.3'
+        )
+        self.logger.info.assert_called_once_with(expected_message)
+
 
 
 class TestNoSpoofing(WebTestCase):
