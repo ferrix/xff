@@ -31,6 +31,9 @@ class XForwardedForMiddleware:
     This middleware will automatically clean the X-Forwarded-For header
     unless XFF_CLEAN = False is set.
 
+    By default, this middleware rewrites HTTP_REMOTE_ADDR. To leave it
+    untouched, set XFF_REWRITE_REMOTE_ADDR = False.
+
     XFF_LOOSE_UNSAFE = True will simply shut up and set the last in the
     stack.
 
@@ -54,6 +57,8 @@ class XForwardedForMiddleware:
         self.header_required = getattr(settings, 'XFF_HEADER_REQUIRED',
                                        (self.always_proxy or self.strict))
         self.clean = getattr(settings, 'XFF_CLEAN', True)
+        self.rewrite_remote = getattr(settings, 'XFF_REWRITE_REMOTE_ADDR',
+                                      True)
 
     def __call__(self, request):
         response = self.process_request(request)
@@ -77,7 +82,8 @@ class XForwardedForMiddleware:
                 return HttpResponseNotFound()
 
             if self.loose or exempt:
-                request.META['REMOTE_ADDR'] = levels[0]
+                if self.rewrite_remote:
+                    request.META['REMOTE_ADDR'] = levels[0]
                 return None
 
             if len(levels) != depth and self.strict:
@@ -108,7 +114,8 @@ class XForwardedForMiddleware:
                 if self.no_spoofing:
                     return HttpResponseBadRequest()
 
-            request.META['REMOTE_ADDR'] = levels[-1 * depth]
+            if self.rewrite_remote:
+                request.META['REMOTE_ADDR'] = levels[-1 * depth]
 
             if self.clean:
                 cleaned = ','.join(levels[-1 * depth:])
