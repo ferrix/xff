@@ -48,7 +48,6 @@ class XForwardedForMiddleware:
     def __init__(self, get_response=None):
         self.get_response = get_response
 
-        self.depth = getattr(settings, 'XFF_TRUSTED_PROXY_DEPTH', 0)
         self.stealth = getattr(settings, 'XFF_EXEMPT_STEALTH', False)
         self.loose = getattr(settings, 'XFF_LOOSE_UNSAFE', False)
         self.strict = getattr(settings, 'XFF_STRICT', False)
@@ -66,12 +65,15 @@ class XForwardedForMiddleware:
             response = self.get_response(request)
         return response
 
+    def get_trusted_depth(self, request):
+        return getattr(settings, 'XFF_TRUSTED_PROXY_DEPTH', 0)
+
     def process_request(self, request):
         '''
         The beef.
         '''
         path = request.path_info.lstrip('/')
-        depth = self.depth
+        depth = self.get_trusted_depth(request)
         exempt = any(m.match(path) for m in XFF_EXEMPT_URLS)
 
         if 'HTTP_X_FORWARDED_FOR' in request.META:
