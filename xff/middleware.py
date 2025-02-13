@@ -65,8 +65,7 @@ class XForwardedForMiddleware:
         depth = self.depth
         exempt = any(m.match(path) for m in self.exempt_urls)
 
-        if 'HTTP_X_FORWARDED_FOR' in request.META:
-            header = request.META['HTTP_X_FORWARDED_FOR']
+        if header := request.headers.get("X-Forwarded-For"):
             levels = [x.strip() for x in header.split(',')]
 
             if len(levels) >= depth and exempt and self.stealth:
@@ -111,6 +110,7 @@ class XForwardedForMiddleware:
             if self.clean:
                 cleaned = ','.join(levels[-1 * depth:])
                 request.META['HTTP_X_FORWARDED_FOR'] = cleaned
+                request.__dict__.pop("headers", None)  # Clear headers cache
 
         elif self.header_required and not (exempt or self.loose):
             logger.error(
