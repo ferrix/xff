@@ -1,14 +1,9 @@
 ''' XFF Middleware '''
 import logging
-from re import compile
+import re
 
 from django.conf import settings
 from django.http import HttpResponseBadRequest, HttpResponseNotFound
-
-
-XFF_EXEMPT_URLS = []
-if hasattr(settings, 'XFF_EXEMPT_URLS'):
-    XFF_EXEMPT_URLS = [compile(expr) for expr in settings.XFF_EXEMPT_URLS]
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +35,7 @@ class XForwardedForMiddleware:
     XFF_EXEMPT_URLS can be an iterable (eg. list) that defines URLs as
     regexps that will not be checked. XFF_EXEMPT_STEALTH = True will
     return a 404 when all proxies are present. This is nice for a
-    healtcheck URL that is not for the public eye.
+    healthcheck URL that is not for the public eye.
 
     XFF_HEADER_REQUIRED = True will return a bad request when the header
     is not set. By default it takes the same value as XFF_ALWAYS_PROXY.
@@ -59,25 +54,23 @@ class XForwardedForMiddleware:
         self.rewrite_remote = getattr(settings, 'XFF_REWRITE_REMOTE_ADDR',
                                       True)
 
-    def __call__(self, request):
-        response = self.process_request(request)
-        if not response:
-            response = self.get_response(request)
-        return response
+        self.exempt_urls = [
+            re.compile(expr)
+            for expr in getattr(settings, 'XFF_EXEMPT_URLS', [])
+        ]
 
     def get_trusted_depth(self, request):
         return getattr(settings, 'XFF_TRUSTED_PROXY_DEPTH', 0)
 
-    def process_request(self, request):
+    def __call__(self, request):
         '''
         The beef.
         '''
         path = request.path_info.lstrip('/')
         depth = self.get_trusted_depth(request)
-        exempt = any(m.match(path) for m in XFF_EXEMPT_URLS)
+        exempt = any(m.match(path) for m in self.exempt_urls)
 
-        if 'HTTP_X_FORWARDED_FOR' in request.META:
-            header = request.META['HTTP_X_FORWARDED_FOR']
+        if header := request.headers.get("X-Forwarded-For"):
             levels = [x.strip() for x in header.split(',')]
 
             if len(levels) >= depth and exempt and self.stealth:
@@ -86,7 +79,7 @@ class XForwardedForMiddleware:
             if self.loose or exempt:
                 if self.rewrite_remote:
                     request.META['REMOTE_ADDR'] = levels[0]
-                return None
+                return self.get_response(request)
 
             if len(levels) != depth and self.strict:
                 logger.warning((
@@ -117,15 +110,16 @@ class XForwardedForMiddleware:
                     return HttpResponseBadRequest()
 
             if self.rewrite_remote:
-                request.META['REMOTE_ADDR'] = levels[-1 * depth]
+                request.META['REMOTE_ADDR'] = levels[-depth]
 
             if self.clean:
-                cleaned = ','.join(levels[-1 * depth:])
+                cleaned = ','.join(levels[-depth:])
                 request.META['HTTP_X_FORWARDED_FOR'] = cleaned
+                request.__dict__.pop("headers", None)  # Clear headers cache
 
         elif self.header_required and not (exempt or self.loose):
             logger.error(
                 'No X-Forwarded-For header set, not behind a reverse proxy.')
             return HttpResponseBadRequest()
 
-        return None
+        return self.get_response(request)
