@@ -105,10 +105,10 @@ class XForwardedForMiddleware:
                     return HttpResponseBadRequest()
 
             if self.rewrite_remote:
-                request.META['REMOTE_ADDR'] = levels[-1 * depth]
+                request.META['REMOTE_ADDR'] = levels[-depth]
 
             if self.clean:
-                cleaned = ','.join(levels[-1 * depth:])
+                cleaned = ','.join(levels[-depth:])
                 request.META['HTTP_X_FORWARDED_FOR'] = cleaned
                 request.__dict__.pop("headers", None)  # Clear headers cache
 
