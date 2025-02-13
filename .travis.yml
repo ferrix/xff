@@ -3,40 +3,28 @@ language: python
 sudo: false
 
 python:
-  - "2.7"
-  - "3.6"
-  - "3.7-dev"
+- "3.9"
+- "3.10"
+- "3.11"
+- "3.12"
+- "3.13"
 
 env:
-  - DJANGO=1.9
-  - DJANGO=1.10
-  - DJANGO=1.11
-  - DJANGO=2.0
-  - DJANGO=2.1
+  - DJANGO=4.2
+  - DJANGO=5.0
+  - DJANGO=5.1
   - DJANGO=master
 
 matrix:
   exclude:
-    - python: "2.7"
-      env: DJANGO=2.0
-    - python: "2.7"
-      env: DJANGO=2.1
-    - python: "2.7"
+    - python: "3.9"
+      env: DJANGO=5.0
+    - python: "3.9"
+      env: DJANGO=5.1
+    - python: "3.9"
       env: DJANGO=master
-    - python: "3.6"
-      env: DJANGO=1.9
-    - python: "3.7-dev"
-      env: DJANGO=1.9
-    - python: "3.6"
-      env: DJANGO=1.10
-    - python: "3.7-dev"
-      env: DJANGO=1.10
-    - python: "3.6"
-      env: DJANGO=1.11
-    - python: "3.7-dev"
-      env: DJANGO=1.11
   include:
-    - python: "3.7-dev"
+    - python: "3.13"
       env: TOXENV=flake8
   allow_failures:
     - env: DJANGO=master

@@ -55,7 +55,10 @@ class XForwardedForMiddleware:
         self.rewrite_remote = getattr(settings, 'XFF_REWRITE_REMOTE_ADDR',
                                       True)
 
-        self.exempt_urls = [re.compile(expr) for expr in getattr(settings, 'XFF_EXEMPT_URLS', [])]
+        self.exempt_urls = [
+            re.compile(expr)
+            for expr in getattr(settings, 'XFF_EXEMPT_URLS', [])
+        ]
 
     def __call__(self, request):
         '''

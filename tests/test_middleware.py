@@ -1,4 +1,4 @@
-from mock import patch
+from unittest.mock import patch
 from django.test import TestCase, Client
 from django.test.utils import override_settings
 from xff.middleware import XForwardedForMiddleware
