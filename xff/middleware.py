@@ -1,14 +1,9 @@
 ''' XFF Middleware '''
 import logging
-from re import compile
+import re
 
 from django.conf import settings
 from django.http import HttpResponseBadRequest, HttpResponseNotFound
-
-
-XFF_EXEMPT_URLS = []
-if hasattr(settings, 'XFF_EXEMPT_URLS'):
-    XFF_EXEMPT_URLS = [compile(expr) for expr in settings.XFF_EXEMPT_URLS]
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +55,8 @@ class XForwardedForMiddleware:
         self.rewrite_remote = getattr(settings, 'XFF_REWRITE_REMOTE_ADDR',
                                       True)
 
+        self.exempt_urls = [re.compile(expr) for expr in getattr(settings, 'XFF_EXEMPT_URLS', [])]
+
     def __call__(self, request):
         response = self.process_request(request)
         if not response:
@@ -72,7 +69,7 @@ class XForwardedForMiddleware:
         '''
         path = request.path_info.lstrip('/')
         depth = self.depth
-        exempt = any(m.match(path) for m in XFF_EXEMPT_URLS)
+        exempt = any(m.match(path) for m in self.exempt_urls)
 
         if 'HTTP_X_FORWARDED_FOR' in request.META:
             header = request.META['HTTP_X_FORWARDED_FOR']
