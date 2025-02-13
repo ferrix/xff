@@ -35,7 +35,7 @@ class XForwardedForMiddleware:
     XFF_EXEMPT_URLS can be an iterable (eg. list) that defines URLs as
     regexps that will not be checked. XFF_EXEMPT_STEALTH = True will
     return a 404 when all proxies are present. This is nice for a
-    healtcheck URL that is not for the public eye.
+    healthcheck URL that is not for the public eye.
 
     XFF_HEADER_REQUIRED = True will return a bad request when the header
     is not set. By default it takes the same value as XFF_ALWAYS_PROXY.
@@ -58,12 +58,6 @@ class XForwardedForMiddleware:
         self.exempt_urls = [re.compile(expr) for expr in getattr(settings, 'XFF_EXEMPT_URLS', [])]
 
     def __call__(self, request):
-        response = self.process_request(request)
-        if not response:
-            response = self.get_response(request)
-        return response
-
-    def process_request(self, request):
         '''
         The beef.
         '''
@@ -81,7 +75,7 @@ class XForwardedForMiddleware:
             if self.loose or exempt:
                 if self.rewrite_remote:
                     request.META['REMOTE_ADDR'] = levels[0]
-                return None
+                return self.get_response(request)
 
             if len(levels) != depth and self.strict:
                 logger.warning((
@@ -123,4 +117,4 @@ class XForwardedForMiddleware:
                 'No X-Forwarded-For header set, not behind a reverse proxy.')
             return HttpResponseBadRequest()
 
-        return None
+        return self.get_response(request)
